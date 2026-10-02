@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusGrievance 360 | Smart College Complaint Redressal Portal</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js & Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-[#0b1120] text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-cyan-500 selection:text-black">
+
+  <!-- Top Navigation Bar -->
+  <header class="glass-nav sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        
+        <!-- Logo -->
+        <a href="#home" class="flex items-center gap-3 group" onclick="switchView('home')">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="font-extrabold text-white tracking-tight text-lg leading-none">CampusGrievance<span class="text-cyan-400">360</span></div>
+            <div class="text-[10px] font-mono text-cyan-400 uppercase tracking-wider font-semibold">Smart Redressal Portal</div>
+          </div>
+        </a>
+
+        <!-- Dynamic Nav Links -->
+        <nav class="hidden md:flex items-center gap-6 font-medium text-sm text-slate-300">
+          <a href="#home" onclick="switchView('home')" class="hover:text-cyan-400 transition-colors">Home</a>
+          <a href="#track" onclick="switchView('track')" class="hover:text-cyan-400 transition-colors flex items-center gap-1.5">
+            <i data-lucide="search" class="w-4 h-4 text-cyan-400"></i>
+            <span>Track Grievance</span>
+          </a>
+
+          <!-- Student-only Links -->
+          <div id="navStudentLinks" class="hidden flex items-center gap-4">
+            <a href="#student" onclick="switchView('student')" class="hover:text-cyan-400 transition-colors">My Complaints</a>
+            <a href="#new-complaint" onclick="switchView('new-complaint')" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>File New Complaint</span>
+            </a>
+          </div>
+
+          <!-- Staff-only Links -->
+          <div id="navStaffLinks" class="hidden">
+            <a href="#admin" onclick="switchView('admin')" class="px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30 text-xs flex items-center gap-1">
+              <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+              <span>Staff Operations Desk</span>
+            </a>
+          </div>
+        </nav>
+
+        <!-- User Controls / Auth -->
+        <div class="flex items-center gap-3">
+          <!-- Logged In State -->
+          <div id="navUserLoggedIn" class="hidden flex items-center gap-3">
+            <div class="text-right hidden sm:block">
+              <span id="navUserName" class="text-xs font-bold text-white block leading-tight">Student Name</span>
+              <span id="navUserBadge" class="text-[11px] font-mono text-cyan-400 font-medium capitalize">Student • email</span>
+            </div>
+            <button onclick="handleLogout()" class="p-2 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-white/10 transition-colors" title="Log Out">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Logged Out State -->
+          <div id="navUserLoggedOut">
+            <a href="#login" onclick="switchView('login')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5">
+              <i data-lucide="user-check" class="w-4 h-4"></i>
+              <span>Portal Login</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Banner / Toast -->
+  <div id="globalToast" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full hidden">
+    <div id="toastContent" class="p-4 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-between gap-3 border shadow-md bg-blue-500/20 text-cyan-200 border-blue-500/30">
+      <div class="flex items-center gap-2">
+        <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+        <span id="toastMessage">Notification message here</span>
+      </div>
+      <button onclick="hideToast()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+  </div>
+
+  <!-- MAIN SPA ROUTER CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ============================================================== -->
+    <!-- VIEW 1: HOME PAGE -->
+    <!-- ============================================================== -->
+    <section id="view-home" class="spa-view space-y-12">
+      <!-- Hero Banner -->
+      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white p-8 sm:p-14 border border-white/10 shadow-2xl">
+        <div class="absolute -right-20 -top-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-20 -bottom-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-3xl space-y-6">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-cyan-300 text-xs font-mono font-medium backdrop-blur-md">
+            <i data-lucide="shield" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Official Campus Redressal & Transparency Cell</span>
+          </div>
+
+          <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+            Voice Your Concerns. <br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-300 to-indigo-300">Resolved Transparently.</span>
+          </h1>
+
+          <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl font-normal">
+            A centralized grievance resolution system for students to lodge, track, and resolve campus issues across Canteen hygiene, Classroom amenities, Labs, Wi-Fi, Transport, and Safety with time-bound SLAs.
+          </p>
+
+          <!-- Instant Ticket Search Box -->
+          <div class="bg-white/5 p-2 sm:p-2.5 rounded-2xl border border-white/15 backdrop-blur-md max-w-xl shadow-2xl">
+            <form onsubmit="handleQuickSearch(event)" class="flex flex-col sm:flex-row gap-2">
+              <div class="relative flex-1">
+                <i data-lucide="search" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="quickSearchInput" required placeholder="Enter Ticket ID (e.g. CMP-2026-8001)..." 
+                       class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/90 border border-white/10 text-white placeholder-slate-400 text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cyan-400">
+              </div>
+              <button type="submit" class="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 shrink-0">
+                <span>Track Live Status</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+            </form>
+          </div>
+
+          <!-- Quick Action Badges -->
+          <div class="flex flex-wrap items-center gap-4 pt-2">
+            <button onclick="handleLodgeClick()" class="inline-flex items-center gap-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-xl transition-all shadow-md">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+              <span>Lodge a Complaint</span>
+            </button>
+            <div class="flex items-center gap-2 text-xs text-slate-300 font-mono">
+              <i data-lucide="lock" class="w-4 h-4 text-emerald-400"></i>
+              <span>100% Anonymous Reporting Supported</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Metrics Ticker -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass-panel p-5 rounded-2xl shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono font-semibold text-slate-400 uppercase">Total Logged</span>
+            <div class="p-2 rounded-lg bg-blue-500/20 text-cyan-400"><i data-lucide="inbox" class="w-4 h-4"></i></div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-white" id="statTotalLogged">6</div>
+          <div class="text-[11px] text-slate-400 mt-1">Campus-wide requests</div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono font-semibold text-slate-400 uppercase">Resolved</span>
+            <div class="p-2 rounded-lg bg-emerald-500/20 text-emerald-400"><i data-lucide="check-circle" class="w-4 h-4"></i></div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400" id="statResolved">2</div>
+          <div class="text-[11px] text-emerald-300 font-medium mt-1">Completed & Audited</div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono font-semibold text-slate-400 uppercase">In Progress</span>
+            <div class="p-2 rounded-lg bg-amber-500/20 text-amber-400"><i data-lucide="clock" class="w-4 h-4"></i></div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-amber-400" id="statInProgress">3</div>
+          <div class="text-[11px] text-amber-300 font-medium mt-1">Under Investigation</div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono font-semibold text-slate-400 uppercase">Average SLA</span>
+            <div class="p-2 rounded-lg bg-indigo-500/20 text-indigo-400"><i data-lucide="timer" class="w-4 h-4"></i></div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-indigo-400">24-48 hrs</div>
+          <div class="text-[11px] text-indigo-300 font-medium mt-1">Strict time resolution</div>
+        </div>
+      </div>
+
+      <!-- Categories Showcase -->
+      <div class="space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Covered Grievance Categories</h2>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1">Directly dispatched to the designated campus committees with SLA governance.</p>
+          </div>
+          <span class="text-xs font-mono text-cyan-400 font-semibold bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+            9 Department Streams
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="homeCategoriesGrid">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 2: TRACK GRIEVANCE PAGE -->
+    <!-- ============================================================== -->
+    <section id="view-track" class="spa-view hidden max-w-3xl mx-auto space-y-8">
+      <div class="glass-panel p-6 sm:p-8 rounded-3xl shadow-lg space-y-4">
+        <div class="text-center max-w-lg mx-auto space-y-1">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-cyan-400 flex items-center justify-center mx-auto mb-2 font-bold">
+            <i data-lucide="search" class="w-5 h-5"></i>
+          </div>
+          <h1 class="text-xl sm:text-2xl font-extrabold text-white">Track Grievance Status</h1>
+          <p class="text-xs text-slate-400">Enter your official Ticket ID to inspect live progress and action updates.</p>
+        </div>
+
+        <form onsubmit="handleTrackSearch(event)" class="flex gap-2 max-w-md mx-auto">
+          <input type="text" id="trackInput" required placeholder="e.g. CMP-2026-8001" 
+                 class="flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-slate-900 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cyan-400">
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm transition-all flex items-center gap-1.5 shadow-md">
+            <span>Track</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- Track Result Container -->
+      <div id="trackResultContainer" class="hidden">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 3: LOGIN / REGISTER PAGE -->
+    <!-- ============================================================== -->
+    <section id="view-login" class="spa-view hidden max-w-md mx-auto my-6 space-y-6">
+      <div class="text-center space-y-1">
+        <div class="inline-flex p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-cyan-400 mb-2">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <h1 class="text-2xl font-extrabold text-white tracking-tight">Institutional Login</h1>
+        <p class="text-xs text-slate-400">Open portal access for Students, Faculty & Staff.</p>
+      </div>
+
+      <!-- Direct Login Card -->
+      <div class="glass-panel p-6 sm:p-8 rounded-3xl shadow-2xl space-y-5">
+        
+        <!-- Tab Switcher -->
+        <div class="flex bg-slate-900/80 border border-white/10 p-1 rounded-xl font-mono text-xs">
+          <button type="button" id="tabSignIn" onclick="setAuthTab('login')" class="flex-1 py-2 rounded-lg font-bold bg-blue-600 text-white shadow-xs transition-all">Sign In</button>
+          <button type="button" id="tabRegister" onclick="setAuthTab('register')" class="flex-1 py-2 rounded-lg text-slate-400 font-medium hover:text-white transition-all">Manual Register</button>
+        </div>
+
+        <!-- Direct Login Form -->
+        <form id="authLoginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+          <!-- Role Toggle: Student vs Staff -->
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-1.5">Choose Login Role *</label>
+            <div class="grid grid-cols-2 gap-2 font-mono text-xs p-1 bg-slate-900/90 border border-white/10 rounded-xl">
+              <button type="button" id="btnRoleStudent" onclick="selectLoginRole('student')" class="py-2 px-3 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-md">
+                <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                <span>Student Login</span>
+              </button>
+              
+              <button type="button" id="btnRoleStaff" onclick="selectLoginRole('admin')" class="py-2 px-3 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white">
+                <i data-lucide="shield" class="w-4 h-4"></i>
+                <span>Staff / Faculty</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Email Input -->
+          <div>
+            <label for="loginEmail" class="block text-xs font-mono font-semibold text-slate-300 mb-1" id="loginEmailLabel">Student Email ID *</label>
+            <div class="relative">
+              <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="loginEmail" required placeholder="e.g. yourname.ppps@gmail.com" 
+                     class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-white/10 bg-slate-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 font-mono">
+            </div>
+            <p class="text-[10px] text-slate-400 font-mono mt-1" id="loginEmailHint">Any student can log in with <strong class="text-cyan-400">yourname.ppps@gmail.com</strong></p>
+          </div>
+
+          <!-- Password Input -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="loginPassword" class="block text-xs font-mono font-semibold text-slate-300">Password *</label>
+              <span class="text-[10px] text-cyan-400 font-mono font-bold" id="loginPassHint">Default: college123</span>
+            </div>
+            <div class="relative">
+              <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input type="password" id="loginPassword" required placeholder="••••••••" 
+                     class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-white/10 bg-slate-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+            </div>
+          </div>
+
+          <button type="submit" id="loginSubmitBtn" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+            <span id="loginSubmitText">Sign In as Student</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </form>
+
+        <!-- Registration Form -->
+        <form id="authRegisterForm" onsubmit="handleRegisterSubmit(event)" class="space-y-4 hidden">
+          <div>
+            <label class="block text-xs font-mono font-semibold text-slate-300 mb-1">Register as: *</label>
+            <div class="grid grid-cols-2 gap-2 font-mono text-xs">
+              <label class="cursor-pointer border border-white/15 rounded-xl p-2.5 text-center has-[:checked]:border-blue-500 has-[:checked]:bg-blue-600/20 has-[:checked]:text-cyan-300 font-bold">
+                <input type="radio" name="regRole" value="student" checked class="sr-only">
+                <span>🎓 Student</span>
+              </label>
+              <label class="cursor-pointer border border-white/15 rounded-xl p-2.5 text-center has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-600/20 has-[:checked]:text-indigo-300 font-bold">
+                <input type="radio" name="regRole" value="admin" class="sr-only">
+                <span>🛡️ Faculty / Staff</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-mono font-semibold text-slate-300 mb-1">Full Name *</label>
+            <input type="text" id="regName" required placeholder="e.g. Kavya or Prof. Raman" 
+                   class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-slate-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+          </div>
+
+          <div>
+            <label class="block text-xs font-mono font-semibold text-slate-300 mb-1">Email ID (e.g. name.ppps@gmail.com) *</label>
+            <input type="email" id="regEmail" required placeholder="e.g. yourname.ppps@gmail.com" 
+                   class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-slate-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 font-mono">
+          </div>
+
+          <div>
+            <label class="block text-xs font-mono font-semibold text-slate-300 mb-1">Secret Password *</label>
+            <input type="password" id="regPassword" required placeholder="Choose your secret password" 
+                   class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-slate-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Register Account</span>
+          </button>
+        </form>
+
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 4: STUDENT DASHBOARD -->
+    <!-- ============================================================== -->
+    <section id="view-student" class="spa-view hidden space-y-8">
+      <!-- Header -->
+      <div class="glass-panel p-6 rounded-3xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="studentRegNoBadge" class="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-cyan-300 text-xs font-mono font-bold border border-cyan-500/30">23CS101</span>
+            <span id="studentEmailBadge" class="text-xs text-slate-400 font-mono">hema.ppps@gmail.com</span>
+          </div>
+          <h1 class="text-2xl font-extrabold text-white mt-1">Hello, <span id="studentDisplayName">Student</span> 👋</h1>
+          <p class="text-xs sm:text-sm text-slate-400">Track and manage your filed campus grievances in real-time.</p>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="openChangePwdModal()" class="px-4 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs sm:text-sm transition-all flex items-center gap-1.5 border border-white/10">
+            <i data-lucide="key-round" class="w-4 h-4 text-amber-400"></i>
+            <span>Change Password</span>
+          </button>
+
+          <button onclick="switchView('new-complaint')" class="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>File New Grievance</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Staff Misuse Advisory Card -->
+      <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-start sm:items-center gap-3">
+          <div class="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+            <i data-lucide="shield-alert" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wide">Protect Your Account Privacy from Staff Misuse</h4>
+            <p class="text-xs text-amber-200/90 mt-0.5 leading-relaxed">
+              If you are still using the college-issued default password, college staff or administrators may know it. We strongly recommend changing your password to your own secret password.
+            </p>
+          </div>
+        </div>
+        <button onclick="openChangePwdModal()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition-colors shadow-xs flex items-center gap-1.5">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          <span>Change Default Password Now</span>
+        </button>
+      </div>
+
+      <!-- Student KPI Summary -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="glass-panel p-5 rounded-2xl shadow-lg flex items-center justify-between">
+          <div>
+            <span class="text-xs font-mono text-slate-400 uppercase">My Complaints</span>
+            <div class="text-2xl font-extrabold text-white mt-1" id="studentStatTotal">0</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-cyan-400 flex items-center justify-center font-bold">
+            <i data-lucide="folder" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl shadow-lg flex items-center justify-between">
+          <div>
+            <span class="text-xs font-mono text-slate-400 uppercase">Pending Review</span>
+            <div class="text-2xl font-extrabold text-amber-400 mt-1" id="studentStatPending">0</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+            <i data-lucide="clock" class="w-5 h-5"></i>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl shadow-lg flex items-center justify-between">
+          <div>
+            <span class="text-xs font-mono text-slate-400 uppercase">Resolved Issues</span>
+            <div class="text-2xl font-extrabold text-emerald-400 mt-1" id="studentStatResolved">0</div>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Complaints List Container -->
+      <div class="glass-panel rounded-3xl shadow-lg overflow-hidden">
+        <div class="p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 class="font-bold text-white text-base">Grievance History & Status</h3>
+          <div class="flex flex-wrap gap-1.5 font-mono text-xs" id="studentFilterButtons">
+            <button onclick="filterStudentComplaints('all')" class="student-flt-btn px-3 py-1.5 rounded-lg border bg-blue-600 text-white border-blue-500 font-bold" data-flt="all">All</button>
+            <button onclick="filterStudentComplaints('Pending')" class="student-flt-btn px-3 py-1.5 rounded-lg border bg-white/5 text-slate-400 border-white/10 hover:text-white" data-flt="Pending">Pending</button>
+            <button onclick="filterStudentComplaints('In Progress')" class="student-flt-btn px-3 py-1.5 rounded-lg border bg-white/5 text-slate-400 border-white/10 hover:text-white" data-flt="In Progress">In Progress</button>
+            <button onclick="filterStudentComplaints('Resolved')" class="student-flt-btn px-3 py-1.5 rounded-lg border bg-white/5 text-slate-400 border-white/10 hover:text-white" data-flt="Resolved">Resolved</button>
+          </div>
+        </div>
+
+        <div class="divide-y divide-white/10" id="studentComplaintsList">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 5: FILE NEW COMPLAINT -->
+    <!-- ============================================================== -->
+    <section id="view-new-complaint" class="spa-view hidden max-w-2xl mx-auto space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-extrabold text-white tracking-tight">Lodge a New Grievance</h1>
+          <p class="text-xs sm:text-sm text-slate-400">Provide accurate details to ensure immediate dispatch to the campus incharge.</p>
+        </div>
+        <button onclick="switchView('student')" class="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1 font-mono">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>Back to Dashboard</span>
+        </button>
+      </div>
+
+      <div class="glass-panel p-6 sm:p-8 rounded-3xl shadow-xl space-y-6">
+        <form onsubmit="handleNewComplaintSubmit(event)" class="space-y-5">
+          <!-- Category -->
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-2">Select Department / Category *</label>
+            <select id="newCompCategory" required class="w-full px-3.5 py-3 rounded-xl border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-slate-900 text-white">
+              <!-- Rendered via JS -->
+            </select>
+          </div>
+
+          <!-- Title -->
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-2">Complaint Subject / Title *</label>
+            <input type="text" id="newCompTitle" required placeholder="e.g. Drinking water dispenser filter defective in Canteen" 
+                   class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-slate-900 text-white">
+          </div>
+
+          <!-- Location -->
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-2">Specific Campus Location / Room No / Bus Route *</label>
+            <div class="relative">
+              <i data-lucide="map-pin" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="newCompLocation" required placeholder="e.g. Science Block 2nd Floor, Room 204 or Main Canteen" 
+                     class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-slate-900 text-white">
+            </div>
+          </div>
+
+          <!-- Priority -->
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-2">Priority Level *</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <label class="cursor-pointer border border-white/10 rounded-xl p-3 flex flex-col items-center bg-slate-900/60 hover:bg-slate-800 transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-600/20">
+                <input type="radio" name="newCompPriority" value="Low" class="sr-only">
+                <span class="text-xs font-bold text-slate-300">Low</span>
+                <span class="text-[10px] text-slate-500 mt-0.5">Minor issue</span>
+              </label>
+
+              <label class="cursor-pointer border border-white/10 rounded-xl p-3 flex flex-col items-center bg-slate-900/60 hover:bg-slate-800 transition-colors has-[:checked]:border-blue-500 has-[:checked]:bg-blue-600/20">
+                <input type="radio" name="newCompPriority" value="Medium" checked class="sr-only">
+                <span class="text-xs font-bold text-cyan-400">Medium</span>
+                <span class="text-[10px] text-slate-500 mt-0.5">Standard SLA</span>
+              </label>
+
+              <label class="cursor-pointer border border-white/10 rounded-xl p-3 flex flex-col items-center bg-slate-900/60 hover:bg-slate-800 transition-colors has-[:checked]:border-amber-500 has-[:checked]:bg-amber-600/20">
+                <input type="radio" name="newCompPriority" value="High" class="sr-only">
+                <span class="text-xs font-bold text-amber-400">High</span>
+                <span class="text-[10px] text-slate-500 mt-0.5">Direct Impact</span>
+              </label>
+
+              <label class="cursor-pointer border border-white/10 rounded-xl p-3 flex flex-col items-center bg-slate-900/60 hover:bg-slate-800 transition-colors has-[:checked]:border-rose-500 has-[:checked]:bg-rose-600/20">
+                <input type="radio" name="newCompPriority" value="Urgent" class="sr-only">
+                <span class="text-xs font-bold text-rose-400">Urgent</span>
+                <span class="text-[10px] text-slate-500 mt-0.5">Critical/Hazard</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider mb-2">Detailed Description *</label>
+            <textarea id="newCompDesc" rows="4" required placeholder="Please describe what the problem is, how long it has been occurring..." 
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-slate-900 text-white"></textarea>
+          </div>
+
+          <!-- Anonymous Toggle -->
+          <div class="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-start gap-3">
+            <input type="checkbox" id="newCompAnonymous" class="mt-1 w-4 h-4 text-purple-600 rounded border-white/20 bg-slate-900 focus:ring-purple-500">
+            <div>
+              <label for="newCompAnonymous" class="font-bold text-xs text-purple-300 cursor-pointer block">Submit 100% Anonymously</label>
+              <p class="text-[11px] text-purple-200/80 mt-0.5 leading-relaxed">
+                Your name and email will be completely masked from the maintenance staff and public logs.
+              </p>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span>Register Grievance & Generate Ticket ID</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 6: ADMIN OPERATIONS DESK -->
+    <!-- ============================================================== -->
+    <section id="view-admin" class="spa-view hidden space-y-8">
+      <div class="glass-panel p-6 rounded-3xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-mono font-bold border border-indigo-500/30">ADMIN CONSOLE</span>
+            <span class="text-xs text-slate-400 font-mono">Campus Grievance Committee</span>
+          </div>
+          <h1 class="text-2xl font-extrabold text-white mt-1">Campus Grievance Operations Desk</h1>
+          <p class="text-xs sm:text-sm text-slate-400">Monitor, assign department incharge staff, and audit institutional resolutions.</p>
+        </div>
+
+        <button onclick="window.print()" class="px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 font-mono text-xs font-semibold flex items-center gap-1.5 transition-colors">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>Export Audit Report</span>
+        </button>
+      </div>
+
+      <!-- KPI Metrics -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+        <div class="glass-panel p-4 rounded-2xl shadow-lg">
+          <span class="text-[11px] font-mono font-semibold text-slate-400 uppercase">Total Tickets</span>
+          <div class="text-2xl font-extrabold text-white mt-1" id="adminKpiTotal">0</div>
+        </div>
+        <div class="glass-panel p-4 rounded-2xl shadow-lg">
+          <span class="text-[11px] font-mono font-semibold text-slate-400 uppercase">Pending Review</span>
+          <div class="text-2xl font-extrabold text-amber-400 mt-1" id="adminKpiPending">0</div>
+        </div>
+        <div class="glass-panel p-4 rounded-2xl shadow-lg">
+          <span class="text-[11px] font-mono font-semibold text-slate-400 uppercase">In Progress</span>
+          <div class="text-2xl font-extrabold text-cyan-400 mt-1" id="adminKpiInProgress">0</div>
+        </div>
+        <div class="glass-panel p-4 rounded-2xl shadow-lg">
+          <span class="text-[11px] font-mono font-semibold text-slate-400 uppercase">Resolved</span>
+          <div class="text-2xl font-extrabold text-emerald-400 mt-1" id="adminKpiResolved">0</div>
+        </div>
+        <div class="glass-panel p-4 rounded-2xl shadow-lg col-span-2 sm:col-span-1 border-rose-500/30 bg-rose-500/10">
+          <span class="text-[11px] font-mono font-bold text-rose-400 uppercase">Critical / Urgent</span>
+          <div class="text-2xl font-extrabold text-rose-400 mt-1" id="adminKpiUrgent">0</div>
+        </div>
+      </div>
+
+      <!-- Analytics Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-panel p-6 rounded-3xl shadow-lg space-y-4">
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-400"></i>
+            <span>Departmental Distribution</span>
+          </h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="adminCategoryChart"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-panel p-6 rounded-3xl shadow-lg space-y-4">
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-400"></i>
+            <span>Status Lifecycle Breakdown</span>
+          </h3>
+          <div class="h-64 flex items-center justify-center">
+            <canvas id="adminStatusChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Card -->
+      <div class="glass-panel rounded-3xl shadow-lg overflow-hidden space-y-4">
+        <!-- Toolbar -->
+        <div class="p-6 border-b border-white/10 bg-slate-900/40">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <input type="text" id="adminSearchInput" oninput="renderAdminTable()" placeholder="Search Ticket ID, title, room..." 
+                   class="px-3.5 py-2 rounded-xl border border-white/10 text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-slate-900 text-white">
+
+            <select id="adminCatFilter" onchange="renderAdminTable()" class="px-3 py-2 rounded-xl border border-white/10 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-slate-900 text-white">
+              <option value="all">All Departments</option>
+            </select>
+
+            <select id="adminStatusFilter" onchange="renderAdminTable()" class="px-3 py-2 rounded-xl border border-white/10 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-slate-900 text-white font-mono">
+              <option value="all">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Under Review">Under Review</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+
+            <button onclick="resetAdminFilters()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-mono transition-colors">
+              Reset Filters
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead class="bg-slate-900/80 border-b border-white/10 text-slate-400 font-mono text-[11px] uppercase tracking-wider">
+              <tr>
+                <th class="py-3 px-4">Ticket ID</th>
+                <th class="py-3 px-4">Grievance Info</th>
+                <th class="py-3 px-4">Lodged By</th>
+                <th class="py-3 px-4">Priority</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Incharge</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/10" id="adminTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: ADMIN ACTION MODAL -->
+  <!-- ============================================================== -->
+  <div id="adminActionModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 rounded-3xl border border-white/15 max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-scaleUp">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-950">
+        <div>
+          <span class="text-[11px] font-mono font-bold text-cyan-400" id="modalTicketId">CMP-2026-XXXX</span>
+          <h3 class="font-bold text-white text-base" id="modalTicketTitle">Update Grievance</h3>
+        </div>
+        <button onclick="closeAdminModal()" class="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleAdminActionSubmit(event)" class="p-6 space-y-4 overflow-y-auto">
+        <input type="hidden" id="modalCompId">
+
+        <div class="p-3.5 rounded-xl bg-white/5 border border-white/10 text-xs space-y-1">
+          <div class="text-cyan-400 font-mono" id="modalMetaInfo">Category & Location</div>
+          <p class="text-slate-300 leading-relaxed font-normal" id="modalDescText">Description...</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Update Status *</label>
+          <select id="modalStatusSelect" required class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 text-sm font-mono bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400">
+            <option value="Under Review">Under Review (Acknowledged)</option>
+            <option value="In Progress">In Progress (Work Assigned)</option>
+            <option value="Resolved">Resolved (Work Completed)</option>
+            <option value="Rejected">Rejected (Not Feasible/Duplicate)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Assign Incharge / Contractor</label>
+          <input type="text" id="modalInchargeInput" placeholder="e.g. Mr. Muthu (Canteen Manager) or SysAdmin Anand" 
+                 class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-slate-950 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Resolution Summary / Action Taken</label>
+          <textarea id="modalResolutionNotes" rows="3" placeholder="Explain what technical or administrative action was taken to fix this issue (visible to student)..." 
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-slate-950 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-bold text-slate-300 uppercase mb-1">Administrative Log Remark</label>
+          <input type="text" id="modalAdminRemark" placeholder="e.g. Material parts replaced and verified by HOD." 
+                 class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-slate-950 text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400">
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Save & Update Audit Timeline</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: CHANGE PASSWORD MODAL -->
+  <!-- ============================================================== -->
+  <div id="changePwdModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 rounded-3xl border border-white/15 max-w-md w-full overflow-hidden shadow-2xl animate-scaleUp">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-950">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+            <i data-lucide="key-round" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-sm">Update Password</h3>
+            <span class="text-[10px] text-slate-400 font-mono">Keep your account secure</span>
+          </div>
+        </div>
+        <button onclick="closeChangePwdModal()" class="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleChangePasswordSubmit(event)" class="p-6 space-y-4">
+        <div class="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] text-cyan-200 leading-relaxed">
+          <strong>Privacy Shield:</strong> Changing your default college password ensures that faculty or administrative staff cannot access or view your private grievances.
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-semibold text-slate-300 mb-1">Current Password *</label>
+          <input type="password" id="pwdCurrent" required placeholder="Enter current / college default password" 
+                 class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 text-white">
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-semibold text-slate-300 mb-1">New Secret Password *</label>
+          <input type="password" id="pwdNew" required placeholder="Enter new secret password" 
+                 class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 text-white">
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono font-semibold text-slate-300 mb-1">Confirm New Password *</label>
+          <input type="password" id="pwdConfirm" required placeholder="Re-type new secret password" 
+                 class="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 text-white">
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Save New Password & Secure Account</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-slate-950/80 border-t border-white/10 py-8 px-4 text-center text-xs text-slate-400 mt-12">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center text-white text-xs font-bold">CG</div>
+        <span class="font-bold text-slate-200">CampusGrievance 360</span>
+        <span>— Institutional Redressal System</span>
+      </div>
+      <div class="flex items-center gap-4 text-slate-400 font-medium">
+        <a href="#track" onclick="switchView('track')" class="hover:text-white">Track Status</a>
+        <a href="#login" onclick="switchView('login')" class="hover:text-white">Portal Access</a>
+      </div>
+      <div class="font-mono text-[11px] text-slate-500">
+        Client-Side Edition • 100% Ready for GitHub Pages
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Engine -->
+  <script src="app.js"></script>
+</body>
+</html>
